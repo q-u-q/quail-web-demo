@@ -1,7 +1,8 @@
 
-let transport,
-  unistream, bistream,
-  datagram;
+let transports = new Map(),
+  unistreams = new Map(), 
+  bistreams = new Map(),
+  datagrams = new Map();
 
 class Transport {
   constructor(url) {
@@ -63,42 +64,42 @@ class Transport {
   }
 
   //TODO: create uni stream
-  async acceptUnidirectionalStreams() {
+  async acceptUnidirectionalStreams(name) {
     let reader = this.transport.incomingUnidirectionalStreams.getReader();
     try {
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
-          addToEventLog('Done accepting unidirectional streams!');
+          addToEventLog(name, 'Done accepting unidirectional streams!');
           return;
         }
         let stream = value;
-        addToEventLog('New incoming unidirectional stream');
-        this.readFromIncomingStream(stream);
+        addToEventLog(name, 'New incoming unidirectional stream');
+        this.readFromIncomingStream(name, stream);
       }
     } catch (e) {
-      addToEventLog('Error while accepting streams: ' + e, 'error');
+      addToEventLog(name, 'Error while accepting streams: ' + e, 'error');
     }
   }
 
   //TODO: create uni stream
-  async readFromIncomingStream(stream) {
+  async readFromIncomingStream(name, stream) {
     let decoder = new TextDecoderStream('utf-8');
     let reader = stream.pipeThrough(decoder).getReader();
     try {
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
-          addToEventLog('Stream closed');
+          addToEventLog(name, 'Stream closed');
           return;
         }
         let data = value;
-        addToEventLog('Received data on uni stream : ' + data);
+        addToEventLog(name, 'Received data on uni stream : ' + data);
       }
     } catch (e) {
-      addToEventLog(
+      addToEventLog(name, 
         'Error while reading from stream : ' + e, 'error');
-      addToEventLog('    ' + e.message);
+      addToEventLog(name, '    ' + e.message);
     }
   }
 
@@ -130,6 +131,7 @@ class WritableReadable extends Writable {
     super();
     this.reader = null;
     this.onmessage = (data) => { }
+    this.onerror = (error) => { };
   }
 
   async initReader(readable) {
@@ -146,9 +148,7 @@ class WritableReadable extends Writable {
         this.onmessage(value)
       }
     } catch (e) {
-      addToEventLog(
-        'Error while reading from stream : ' + e, 'error');
-      addToEventLog('    ' + e.message);
+      this.onerror(e);
     }
   }
 
@@ -195,91 +195,123 @@ class Datagram extends WritableReadable {
 }
 
 // "Connect" button handler.
-async function connect() {
-  const url = document.getElementById('url').value;
+async function connect(name) {
+  console.log('connect',name);
+  const url = document.getElementById(`${name}-url`).value;
+
+  let transport;
+
   try {
     transport = new Transport(url);
-    addToEventLog('Initiating connection...');
+    transports.set(name,transport);
+
+    addToEventLog(name, 'Initiating connection...');
   } catch (e) {
-    addToEventLog('Failed to create connection object. ' + e, 'error');
+    addToEventLog(name, 'Failed to create connection object. ' + e, 'error');
     return;
   }
 
   transport.onclose = (error_code, reason) => {
-    addToEventLog(`Connection closed , ${error_code} , ${reason}.`);
+    addToEventLog(name, `Connection closed , ${error_code} , ${reason}.`);
   }
 
   try {
     await transport.connect();
-    addToEventLog('Connection ready.');
+    addToEventLog(name, 'Connection ready.');
   } catch (e) {
-    addToEventLog('Connection failed. ' + e, 'error');
+    addToEventLog(name, 'Connection failed. ' + e, 'error');
     return;
   }
 
-  transport.acceptUnidirectionalStreams();
+  transport.acceptUnidirectionalStreams(name);
 
-  datagram = await transport.createDatagram();
+  let datagram = await transport.createDatagram();
+  datagrams.set(name, datagram);
+  
   datagram.onmessage = (data) => {
-    addToEventLog('Received data on datagram: ' + data);
+    addToEventLog(name, 'Received data on datagram: ' + data);
   };
+  datagram.onerror = (e) => {
+    addToEventLog(name, 
+      'Error while reading from stream : ' + e, 'error');
+    addToEventLog(name, '    ' + e.message);
+  }
   datagram.init();
   //
-  bistream = await transport.createBiStream();
+  let bistream = await transport.createBiStream();
+  bistreams.set(name, bistream);
+
   bistream.onmessage = (data) => {
-    addToEventLog('Received data on bistream: ' + data);
+    addToEventLog(name, 'Received data on bistream: ' + data);
   };
+  datagram.onerror = (e) => {
+    addToEventLog(name,
+      'Error while reading from stream : ' + e, 'error');
+    addToEventLog(name, '    ' + e.message);
+  };
+  
   bistream.init();
   //
-  unistream = await transport.createUniStream();
+  let unistream = await transport.createUniStream();
+  unistreams.set(name,unistream);
+
   unistream.init();
 
-  document.forms.sending.elements.send.disabled = false;
-  document.getElementById('connect').disabled = true;
-  document.getElementById('disconnect').disabled = false;
+  document.getElementById(`${name}-send`).disabled = false;
+  document.getElementById(`${name}-connect`).disabled = true;
+  document.getElementById(`${name}-disconnect`).disabled = false;
 }
 
 // Disconnect
-async function disconnect() {
+async function disconnect(name) {
+  console.log('disconnect',name);
+
+  let transport = transports.get(name);
+
   await transport.disconnect();
 
-  document.getElementById('connect').disabled = false;
-  document.getElementById('disconnect').disabled = true;
+  document.getElementById(`${name}-connect`).disabled = false;
+  document.getElementById(`${name}-disconnect`).disabled = true;
 }
 
 // "Send data" button handler.
-async function sendData() {
-  let form = document.forms.sending.elements;
+async function sendData(name) {
+  console.log('sendData',name);
+
+  let form = document.forms[`${name}-sending`].elements;
   let encoder = new TextEncoder('utf-8');
-  let rawData = sending.data.value;
+  let rawData = form.data.value;
   let data = encoder.encode(rawData);
 
   try {
     switch (form.sendtype.value) {
       case 'datagram': {
+        const datagram = datagrams.get(name);
         await datagram.write(data);
-        addToEventLog('Sent datagram: ' + rawData);
+        addToEventLog(name, 'Sent datagram: ' + rawData);
         break;
       }
       case 'unidi': {
+        const unistream = unistreams.get(name);
         await unistream.write(data);
-        addToEventLog('Sent unidi: ' + rawData);
+        addToEventLog(name, 'Sent unidi: ' + rawData);
         break;
       }
       case 'bidi': {
+        const bistream = bistreams.get(name);
         await bistream.write(data);
-        addToEventLog(
+        addToEventLog(name, 
           'Sent bidi: ' + rawData);
         break;
       }
     }
   } catch (e) {
-    addToEventLog('Error while sending data: ' + e, 'error');
+    addToEventLog(name, 'Error while sending data: ' + e, 'error');
   }
 }
 
-function addToEventLog(text, severity = 'info') {
-  let log = document.getElementById('event-log');
+function addToEventLog(name, text, severity = 'info') {
+  let log = document.getElementById(`${name}-event-log`);
   let mostRecentEntry = log.lastElementChild;
   let entry = document.createElement('li');
   entry.innerText = text;

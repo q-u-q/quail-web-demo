@@ -1,137 +1,159 @@
 <!doctype html>
 <html lang="en">
-  <title>Client</title>
-  <meta charset="utf-8">
-  <!-- WebTransport origin trial token. See https://developer.chrome.com/origintrials/#/view_trial/793759434324049921 -->
-  <meta http-equiv="origin-trial" content="AkSQvBVsfMTgBtlakApX94hWGyBPQJXerRc2Aq8g/sKTMF+yG62+bFUB2yIxaK1furrNH3KNNeJV00UZSZHicw4AAABceyJvcmlnaW4iOiJodHRwczovL2dvb2dsZWNocm9tZS5naXRodWIuaW86NDQzIiwiZmVhdHVyZSI6IldlYlRyYW5zcG9ydCIsImV4cGlyeSI6MTY0Mzc1OTk5OX0=">
-  <script src="index.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: sans-serif;
-    }
+<title>Client</title>
+<meta charset="utf-8">
+<!-- WebTransport origin trial token. See https://developer.chrome.com/origintrials/#/view_trial/793759434324049921 -->
+<script src="index.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    font-family: sans-serif;
+  }
 
-    h1 {
-      margin: 0 auto;
-      width: fit-content;
-    }
+  h1 {
+    margin: 0 auto;
+    width: fit-content;
+  }
 
-    h2 {
-      border-bottom: 1px dotted #333;
-      font-size: 120%;
-      font-weight: normal;
-      padding-bottom: 0.2em;
-      padding-top: 0.5em;
-    }
+  h2 {
+    border-bottom: 1px dotted #333;
+    font-size: 120%;
+    font-weight: normal;
+    padding-bottom: 0.2em;
+    padding-top: 0.5em;
+  }
 
-    code {
-      background-color: #eee;
-    }
+  code {
+    background-color: #eee;
+  }
 
-    input[type=text], textarea {
-      font-family: monospace;
-    }
+  input[type=text],
+  textarea {
+    font-family: monospace;
+  }
 
-    #top {
-      display: flex;
-      flex-direction: row-reverse;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
+  .top {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
-    #explanation {
-      border: 1px dotted black;
-      font-size: 90%;
-      height: fit-content;
-      margin-bottom: 1em;
-      padding: 1em;
-      width: 13em;
-    }
+  .tool {
+    flex-grow: 1;
+    margin: 0 auto;
+    max-width: 26em;
+    padding: 0 1em;
+    width: 26em;
+  }
 
-    #tool {
-      flex-grow: 1;
-      margin: 0 auto;
-      max-width: 26em;
-      padding: 0 1em;
-      width: 26em;
-    }
+  .input-line {
+    display: flex;
+  }
 
-    .input-line {
-      display: flex;
-    }
+  .input-line input[type=text] {
+    flex-grow: 1;
+    margin: 0 0.5em;
+  }
 
-    .input-line input[type=text] {
-      flex-grow: 1;
-      margin: 0 0.5em;
-    }
+  textarea {
+    height: 3em;
+    width: 100%;
+  }
 
-    textarea {
-      height: 3em;
-      width: 100%;
-    }
+  .send {
+    margin-top: 0.5em;
+    width: 15em;
+  }
 
-    #send {
-      margin-top: 0.5em;
-      width: 15em;
-    }
+  .event-log {
+    border: 1px dotted black;
+    font-family: monospace;
+    height: 12em;
+    overflow: scroll;
+    padding-bottom: 1em;
+    padding-top: 1em;
+  }
 
-    #event-log {
-      border: 1px dotted black;
-      font-family: monospace;
-      height: 12em;
-      overflow: scroll;
-      padding-bottom: 1em;
-      padding-top: 1em;
-    }
+  .log-error {
+    color: darkred;
+  }
+</style>
 
-    .log-error {
-      color: darkred;
-    }
-
-    #explanation ul {
-      padding-left: 1em;
-    }
-  </style>
-  <body>
-  <div id="top">
-    <div id="tool">
-    <div>
-      <h2>Establish connection</h2>
-      <div class="input-line">
-      <label for="url">URL:</label>
-      <input type="text" name="url" id="url"
-             value="https://local2:4433/echo">
-      <input type="button" id="connect" value="Connect" onclick="connect()">
-      <input type="button" id="disconnect" value="Disconnect" onclick="disconnect()" disabled>
-      </div>
-    </div>
-    <div>
-      <h2>Send data</h2>
-      <form name="sending">
-      <textarea name="data" id="data"></textarea>
+<body>
+  <div class="top">
+    <div class="tool">
       <div>
-        <input type="radio" name="sendtype" value="datagram"
-               id="datagram">
-        <label for="datagram">Send a datagram</label>
+        <h2>Alice</h2>
+        <div class="input-line">
+          <label for="url">URL:</label>
+          <input type="text" name="url" id="alice-url" value="https://local2:4433/echo?name=alice">
+          <input type="button" id="alice-connect" value="Connect" onclick="connect('alice')">
+          <input type="button" id="alice-disconnect" value="Disconnect" onclick="disconnect('alice')" disabled>
+        </div>
       </div>
       <div>
-        <input type="radio" name="sendtype" value="unidi" id="unidi-stream">
-        <label for="unidi-stream">Open a unidirectional stream</label>
+        <h2>Send data</h2>
+        <form name="alice-sending">
+          <textarea name="data" id="data"></textarea>
+          <div>
+            <input type="radio" name="sendtype" value="datagram" id="datagram">
+            <label for="datagram">Send a datagram</label>
+          </div>
+          <div>
+            <input type="radio" name="sendtype" value="unidi" id="unidi-stream">
+            <label for="unidi-stream">Open a unidirectional stream</label>
+          </div>
+          <div>
+            <input type="radio" name="sendtype" value="bidi" id="bidi-stream" checked>
+            <label for="bidi-stream">Open a bidirectional stream</label>
+          </div>
+          <input type="button" class="send" id="alice-send" name="send" value="Send data" disabled onclick="sendData('alice')">
+        </form>
       </div>
       <div>
-        <input type="radio" name="sendtype" value="bidi" id="bidi-stream" checked>
-        <label for="bidi-stream">Open a bidirectional stream</label>
+        <h2>Event log</h2>
+        <ul id="alice-event-log" class="event-log">
+        </ul>
       </div>
-      <input type="button" id="send" name="send" value="Send data"
-             disabled onclick="sendData()">
-      </form>
     </div>
-    <div>
-      <h2>Event log</h2>
-      <ul id="event-log">
-      </ul>
-    </div>
+    <div class="tool">
+      <div>
+        <h2>Bob</h2>
+        <div class="input-line">
+          <label for="url">URL:</label>
+          <input type="text" name="url" id="bob-url" value="https://local2:4433/echo?name=bob">
+          <input type="button" id="bob-connect" value="Connect" onclick="connect('bob')">
+          <input type="button" id="bob-disconnect" value="Disconnect" onclick="disconnect('bob')" disabled>
+        </div>
+      </div>
+      <div>
+        <h2>Send data</h2>
+        <form name="bob-sending">
+          <textarea name="data" id="data"></textarea>
+          <div>
+            <input type="radio" name="sendtype" value="datagram" id="datagram">
+            <label for="datagram">Send a datagram</label>
+          </div>
+          <div>
+            <input type="radio" name="sendtype" value="unidi" id="unidi-stream">
+            <label for="unidi-stream">Open a unidirectional stream</label>
+          </div>
+          <div>
+            <input type="radio" name="sendtype" value="bidi" id="bidi-stream" checked> 
+            <label for="bidi-stream">Open a bidirectional stream</label>
+          </div>
+          <input type="button" class='send' id="bob-send" name="send" value="Send data" disabled onclick="sendData('bob')">
+        </form>
+      </div>
+      <div>
+        <h2>Event log</h2>
+        <ul id="bob-event-log" class="event-log">
+        </ul>
+      </div>
     </div>
   </div>
-  </body>
+
+</body>
+
 </html>
