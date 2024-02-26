@@ -125,7 +125,6 @@ class Writable {
 
 }
 
-
 class WritableReadable extends Writable {
   constructor() {
     super();
