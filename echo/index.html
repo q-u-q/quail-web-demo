@@ -7,6 +7,10 @@
 <script src="index.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+  :root {
+    --width: 40em;
+  }
+
   body {
     font-family: sans-serif;
   }
@@ -43,9 +47,9 @@
   .tool {
     flex-grow: 1;
     margin: 0 auto;
-    max-width: 26em;
+    max-width: var(--width);
     padding: 0 1em;
-    width: 26em;
+    width: var(--width);
   }
 
   .input-line {
@@ -85,7 +89,7 @@
   <div class="top">
     <div class="tool">
       <div>
-        <h2>Alice</h2>
+        <h2>Echo</h2>
         <div class="input-line">
           <label for="url">URL:</label>
           <input type="text" name="url" id="alice-url" value="https://local2:4433/echo?name=alice">
@@ -98,16 +102,16 @@
         <form name="alice-sending">
           <textarea name="data" id="data"></textarea>
           <div>
-            <input type="radio" name="sendtype" value="datagram" id="datagram">
+            <input type="radio" name="sendtype" value="datagram" id="datagram" checked>
             <label for="datagram">Send a datagram</label>
           </div>
           <div>
             <input type="radio" name="sendtype" value="unidi" id="unidi-stream">
-            <label for="unidi-stream">Open a unidirectional stream</label>
+            <label for="unidi-stream">Open a unidirectional stream & Send a datagram</label>
           </div>
           <div>
-            <input type="radio" name="sendtype" value="bidi" id="bidi-stream" checked>
-            <label for="bidi-stream">Open a bidirectional stream</label>
+            <input type="radio" name="sendtype" value="bidi" id="bidi-stream">
+            <label for="bidi-stream">Open a bidirectional stream & Send a datagram</label>
           </div>
           <input type="button" class="send" id="alice-send" name="send" value="Send data" disabled onclick="sendData('alice')">
         </form>
@@ -115,41 +119,6 @@
       <div>
         <h2>Event log</h2>
         <ul id="alice-event-log" class="event-log">
-        </ul>
-      </div>
-    </div>
-    <div class="tool">
-      <div>
-        <h2>Bob</h2>
-        <div class="input-line">
-          <label for="url">URL:</label>
-          <input type="text" name="url" id="bob-url" value="https://local2:4433/echo?name=bob">
-          <input type="button" id="bob-connect" value="Connect" onclick="connect('bob')">
-          <input type="button" id="bob-disconnect" value="Disconnect" onclick="disconnect('bob')" disabled>
-        </div>
-      </div>
-      <div>
-        <h2>Send data</h2>
-        <form name="bob-sending">
-          <textarea name="data" id="data"></textarea>
-          <div>
-            <input type="radio" name="sendtype" value="datagram" id="datagram">
-            <label for="datagram">Send a datagram</label>
-          </div>
-          <div>
-            <input type="radio" name="sendtype" value="unidi" id="unidi-stream">
-            <label for="unidi-stream">Open a unidirectional stream</label>
-          </div>
-          <div>
-            <input type="radio" name="sendtype" value="bidi" id="bidi-stream" checked> 
-            <label for="bidi-stream">Open a bidirectional stream</label>
-          </div>
-          <input type="button" class='send' id="bob-send" name="send" value="Send data" disabled onclick="sendData('bob')">
-        </form>
-      </div>
-      <div>
-        <h2>Event log</h2>
-        <ul id="bob-event-log" class="event-log">
         </ul>
       </div>
     </div>
